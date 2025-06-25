@@ -1,3 +1,5 @@
+//Jonathas Gabriel e Uriel
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
