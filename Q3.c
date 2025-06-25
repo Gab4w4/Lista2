@@ -7,141 +7,141 @@
 
 #define MAX_LINE 4000
 
-typedef struct ListaInterna {
+typedef struct NodoInterno {
     float valor;
-    struct ListaInterna* prox;
-} ListaInterna;
+    struct NodoInterno* proximo;
+} NodoInterno;
 
-typedef struct ListaExterna {
+typedef struct NodoExterno {
     int chave;
-    ListaInterna* sublista;
-    struct ListaExterna* ant;
-    struct ListaExterna* prox;
-} ListaExterna;
+    NodoInterno* sublista;
+    struct NodoExterno* anterior;
+    struct NodoExterno* proximo;
+} NodoExterno;
 
-ListaExterna* novoNoLE(int chave) {
-    ListaExterna* no = (ListaExterna*)malloc(sizeof(ListaExterna));
-    no->chave = chave;
-    no->sublista = NULL;
-    no->ant = NULL;
-    no->prox = NULL;
-    return no;
+NodoExterno* criarNodoExterno(int chave) {
+    NodoExterno* novo = (NodoExterno*)malloc(sizeof(NodoExterno));
+    novo->chave = chave;
+    novo->sublista = NULL;
+    novo->anterior = NULL;
+    novo->proximo = NULL;
+    return novo;
 }
 
-ListaInterna* novoNoLI(float valor) {
-    ListaInterna* no = (ListaInterna*)malloc(sizeof(ListaInterna));
-    no->valor = valor;
-    no->prox = NULL;
-    return no;
+NodoInterno* criarNodoInterno(float valor) {
+    NodoInterno* novo = (NodoInterno*)malloc(sizeof(NodoInterno));
+    novo->valor = valor;
+    novo->proximo = NULL;
+    return novo;
 }
 
-void inserirOrdenadoLE(ListaExterna** inicio, int chave) {
-    ListaExterna* novo = novoNoLE(chave);
+void adicionarOrdenadoExterno(NodoExterno** inicio, int chave) {
+    NodoExterno* novo = criarNodoExterno(chave);
     if (*inicio == NULL || chave < (*inicio)->chave) {
-        novo->prox = *inicio;
-        if (*inicio) (*inicio)->ant = novo;
+        novo->proximo = *inicio;
+        if (*inicio) (*inicio)->anterior = novo;
         *inicio = novo;
         return;
     }
 
-    ListaExterna* atual = *inicio;
-    while (atual->prox && atual->prox->chave < chave)
-        atual = atual->prox;
+    NodoExterno* atual = *inicio;
+    while (atual->proximo && atual->proximo->chave < chave)
+        atual = atual->proximo;
 
-    novo->prox = atual->prox;
-    if (atual->prox) atual->prox->ant = novo;
-    atual->prox = novo;
-    novo->ant = atual;
+    novo->proximo = atual->proximo;
+    if (atual->proximo) atual->proximo->anterior = novo;
+    atual->proximo = novo;
+    novo->anterior = atual;
 }
 
-void inserirLI(ListaInterna** inicio, float valor) {
-    ListaInterna* novo = novoNoLI(valor);
+void adicionarInterno(NodoInterno** inicio, float valor) {
+    NodoInterno* novo = criarNodoInterno(valor);
     if (!*inicio) {
         *inicio = novo;
-        novo->prox = novo;
+        novo->proximo = novo;
         return;
     }
 
-    ListaInterna* atual = *inicio;
-    while (atual->prox != *inicio)
-        atual = atual->prox;
-    atual->prox = novo;
-    novo->prox = *inicio;
+    NodoInterno* atual = *inicio;
+    while (atual->proximo != *inicio)
+        atual = atual->proximo;
+    atual->proximo = novo;
+    novo->proximo = *inicio;
 }
 
-void associar(ListaExterna* le, ListaInterna* li) {
-    if (!li) return;
-    ListaInterna* ini = li;
+void vincularListas(NodoExterno* listaExterna, NodoInterno* listaInterna) {
+    if (!listaInterna) return;
+    NodoInterno* inicio = listaInterna;
     do {
-        ListaExterna* atualLE = le;
-        while (atualLE) {
-            if (fabs(li->valor - atualLE->chave) < 1.0) {
-                ListaInterna* novo = novoNoLI(li->valor);
-                novo->prox = atualLE->sublista;
-                atualLE->sublista = novo;
+        NodoExterno* atualExterno = listaExterna;
+        while (atualExterno) {
+            if (fabs(listaInterna->valor - atualExterno->chave) < 1.0) {
+                NodoInterno* novo = criarNodoInterno(listaInterna->valor);
+                novo->proximo = atualExterno->sublista;
+                atualExterno->sublista = novo;
                 break;
             }
-            atualLE = atualLE->prox;
+            atualExterno = atualExterno->proximo;
         }
-        li = li->prox;
-    } while (li != ini);
+        listaInterna = listaInterna->proximo;
+    } while (listaInterna != inicio);
 }
 
-void imprimir(ListaExterna* le, FILE* fp_out) {
+void exibirResultado(NodoExterno* listaExterna, FILE* fp_out) {
     fprintf(fp_out, "[");
-    ListaExterna* atual = le;
+    NodoExterno* atual = listaExterna;
     while (atual) {
         fprintf(fp_out, "%d(", atual->chave);
 
-        ListaInterna* sub = atual->sublista;
-        ListaInterna* ordenada = NULL;
+        NodoInterno* sub = atual->sublista;
+        NodoInterno* ordenada = NULL;
         while (sub) {
-            ListaInterna* no = novoNoLI(sub->valor);
+            NodoInterno* no = criarNodoInterno(sub->valor);
             if (!ordenada || no->valor > ordenada->valor) {
-                no->prox = ordenada;
+                no->proximo = ordenada;
                 ordenada = no;
             } else {
-                ListaInterna* temp = ordenada;
-                while (temp->prox && temp->prox->valor > no->valor)
-                    temp = temp->prox;
-                no->prox = temp->prox;
-                temp->prox = no;
+                NodoInterno* temp = ordenada;
+                while (temp->proximo && temp->proximo->valor > no->valor)
+                    temp = temp->proximo;
+                no->proximo = temp->proximo;
+                temp->proximo = no;
             }
-            sub = sub->prox;
+            sub = sub->proximo;
         }
 
-        ListaInterna* ptr = ordenada;
+        NodoInterno* ptr = ordenada;
         while (ptr) {
             fprintf(fp_out, "%.2f", ptr->valor);
-            if (ptr->prox) fprintf(fp_out, "−>");
-            ptr = ptr->prox;
+            if (ptr->proximo) fprintf(fp_out, "−>");
+            ptr = ptr->proximo;
         }
         fprintf(fp_out, ")");
 
-        if (atual->prox) fprintf(fp_out, "->");
-        atual = atual->prox;
+        if (atual->proximo) fprintf(fp_out, "->");
+        atual = atual->proximo;
 
         while (ordenada) {
-            ListaInterna* temp = ordenada;
-            ordenada = ordenada->prox;
+            NodoInterno* temp = ordenada;
+            ordenada = ordenada->proximo;
             free(temp);
         }
     }
     fprintf(fp_out, "]\n");
 }
 
-void liberarTudo(ListaExterna* le) {
-    while (le) {
-        ListaExterna* tempLE = le;
-        le = le->prox;
+void liberarMemoria(NodoExterno* listaExterna) {
+    while (listaExterna) {
+        NodoExterno* tempExterno = listaExterna;
+        listaExterna = listaExterna->proximo;
 
-        ListaInterna* li = tempLE->sublista;
-        while (li) {
-            ListaInterna* tempLI = li;
-            li = li->prox;
-            free(tempLI);
+        NodoInterno* listaInt = tempExterno->sublista;
+        while (listaInt) {
+            NodoInterno* tempInterno = listaInt;
+            listaInt = listaInt->proximo;
+            free(tempInterno);
         }
-        free(tempLE);
+        free(tempExterno);
     }
 }
 
@@ -157,8 +157,8 @@ int main() {
     char linha[MAX_LINE];
 
     while (fgets(linha, sizeof(linha), fp_in)) {
-        ListaExterna* le = NULL;
-        ListaInterna* li = NULL;
+        NodoExterno* listaExterna = NULL;
+        NodoInterno* listaInterna = NULL;
 
         char* token = strtok(linha, " \n");
         int modo = 0;
@@ -170,17 +170,17 @@ int main() {
                 modo = 1;
             } else {
                 if (modo == 0) {
-                    inserirOrdenadoLE(&le, atoi(token));
+                    adicionarOrdenadoExterno(&listaExterna, atoi(token));
                 } else {
-                    inserirLI(&li, atof(token));
+                    adicionarInterno(&listaInterna, atof(token));
                 }
             }
             token = strtok(NULL, " \n");
         }
 
-        associar(le, li);
-        imprimir(le, fp_out);
-        liberarTudo(le);
+        vincularListas(listaExterna, listaInterna);
+        exibirResultado(listaExterna, fp_out);
+        liberarMemoria(listaExterna);
     }
 
     fclose(fp_in);

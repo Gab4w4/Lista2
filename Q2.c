@@ -11,99 +11,99 @@
 
 typedef struct {
     char nomes[MAX_NAMES_STACK][MAX_NAME_LEN];
-    int top;
-} Pilha;
+    int topo;
+} StackNomes;
 
-void init_pilha(Pilha *p);
-int is_empty(Pilha *p);
-int is_full(Pilha *p);
-void push_interno(Pilha *p, const char *nome);
-char* pop_interno(Pilha *p);
+void inicializar_stack(StackNomes *s);
+int stack_vazia(StackNomes *s);
+int stack_cheia(StackNomes *s);
+void inserir_stack(StackNomes *s, const char *nome);
+char* remover_stack(StackNomes *s);
 
 int comparar_nomes(const void *a, const void *b) {
     return strcmp((const char *)a, (const char *)b);
 }
 
-void init_pilha(Pilha *p) {
-    p->top = -1;
+void inicializar_stack(StackNomes *s) {
+    s->topo = -1;
 }
 
-int is_empty(Pilha *p) {
-    return (p->top == -1);
+int stack_vazia(StackNomes *s) {
+    return (s->topo == -1);
 }
 
-int is_full(Pilha *p) {
-    return (p->top == MAX_NAMES_STACK - 1);
+int stack_cheia(StackNomes *s) {
+    return (s->topo == MAX_NAMES_STACK - 1);
 }
 
-void push_interno(Pilha *p, const char *nome) {
-    if (is_full(p)) {
+void inserir_stack(StackNomes *s, const char *nome) {
+    if (stack_cheia(s)) {
         return;
     }
-    p->top++;
-    strcpy(p->nomes[p->top], nome);
+    s->topo++;
+    strcpy(s->nomes[s->topo], nome);
 }
 
-char* pop_interno(Pilha *p) {
-    if (is_empty(p)) {
+char* remover_stack(StackNomes *s) {
+    if (stack_vazia(s)) {
         return NULL;
     }
-    return p->nomes[p->top--];
+    return s->nomes[s->topo--];
 }
 
-void add_op_to_buffer(char *buffer, const char *op, int *first_op_ptr) {
-    if (!(*first_op_ptr)) {
+void adicionar_operacao_buffer(char *buffer, const char *op, int *primeira_op_ptr) {
+    if (!(*primeira_op_ptr)) {
         strcat(buffer, " ");
     }
     strcat(buffer, op);
-    *first_op_ptr = 0;
+    *primeira_op_ptr = 0;
 }
 
-void process_line(char *linha, FILE *fp_out) {
-    Pilha p;
-    init_pilha(&p);
+void processar_linha(char *linha, FILE *fp_out) {
+    StackNomes s;
+    inicializar_stack(&s);
 
-    char temp_nomes_pop[MAX_NAMES_STACK][MAX_NAME_LEN];
-    int temp_pop_count;
+    char nomes_removidos_temp[MAX_NAMES_STACK][MAX_NAME_LEN];
+    int contador_removidos;
 
-    char output_buffer[MAX_OUTPUT_BUFFER_LEN];
-    output_buffer[0] = '\0';
+    char buffer_saida[MAX_OUTPUT_BUFFER_LEN];
+    buffer_saida[0] = '\0';
 
-    int first_op = 1;
+    int primeira_operacao = 1;
 
     char *token = strtok(linha, " ");
     while (token != NULL) {
         char novo_nome[MAX_NAME_LEN];
         strcpy(novo_nome, token);
 
-        temp_pop_count = 0;
+        contador_removidos = 0;
 
-        while (!is_empty(&p) && strcmp(p.nomes[p.top], novo_nome) > 0) {
-            strcpy(temp_nomes_pop[temp_pop_count], pop_interno(&p));
-            temp_pop_count++;
+        while (!stack_vazia(&s) && strcmp(s.nomes[s.topo], novo_nome) > 0) {
+            strcpy(nomes_removidos_temp[contador_removidos], remover_stack(&s));
+            contador_removidos++;
         }
 
-        if (temp_pop_count > 0) {
-            char pop_op_str[20];
-            sprintf(pop_op_str, "%dx-pop", temp_pop_count);
-            add_op_to_buffer(output_buffer, pop_op_str, &first_op);
+        if (contador_removidos > 0) {
+            char str_operacao_remover[20];
+            sprintf(str_operacao_remover, "%dx-pop", contador_removidos);
+            adicionar_operacao_buffer(buffer_saida, str_operacao_remover, &primeira_operacao);
         }
 
-        push_interno(&p, novo_nome);
-        char push_op_str[MAX_NAME_LEN + 6];
-        sprintf(push_op_str, "push-%s", novo_nome);
-        add_op_to_buffer(output_buffer, push_op_str, &first_op);
+        inserir_stack(&s, novo_nome);
+        char str_operacao_inserir[MAX_NAME_LEN + 6];
+        sprintf(str_operacao_inserir, "push-%s", novo_nome);
+        adicionar_operacao_buffer(buffer_saida, str_operacao_inserir, &primeira_operacao);
 
-        for (int i = temp_pop_count - 1; i >= 0; i--) {
-            push_interno(&p, temp_nomes_pop[i]);
-            sprintf(push_op_str, "push-%s", temp_nomes_pop[i]);
-            add_op_to_buffer(output_buffer, push_op_str, &first_op);
+        for (int i = contador_removidos - 1; i >= 0; i--) {
+            inserir_stack(&s, nomes_removidos_temp[i]);
+            sprintf(str_operacao_inserir, "push-%s", nomes_removidos_temp[i]);
+            adicionar_operacao_buffer(buffer_saida, str_operacao_inserir, &primeira_operacao);
         }
 
         token = strtok(NULL, " ");
     }
 
-    fprintf(fp_out, "%s\n", output_buffer);
+    fprintf(fp_out, "%s\n", buffer_saida);
 }
 
 int main() {
@@ -123,7 +123,7 @@ int main() {
             linha[len - 1] = '\0';
         }
 
-        process_line(linha, fp_out);
+        processar_linha(linha, fp_out);
     }
 
     fclose(fp_in);
